@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<!--
+   index.html
+   
+   Copyright 2019 Live session user <kubuntu@kubuntu>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<head>
+<meta charset="utf-8" />
+<title>Level</title>
+<script src="{% static 'third-party/p5/p5.js' %}"></script>
+<script src="{% static 'third-party/p5/p5.sound.js' %}"></script>
+<script src="{% static 'js/maze.js' %}"></script>
+<script src="{% static 'js/character.js' %}"></script>
+<script src="{% static 'js/map_builder.js' %}"></script>
+<style>
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+li {
+  float: left;
+  padding : 5px;
+}
+</style>
+<script>  
+</script>
+</head>
+
+<body>
+<div id="canvas" style="border:solid black 1px;float:right"></div> 
+<form method="post" enctype="multipart/form-data" >
+   {% csrf_token %}
+   <table>      
+      {{ form }}
+    <tr>
+      <td>
+        <label for="laby-h-size">Taille horizontale : </label>
+      </td>
+      <td>
+        <select name="laby-h-size" onchange="laby.resize(int(this.value), int(document.getElementById('laby-v-size').value));" id="laby-h-size" >
+          <option value="5" >5</option>
+          <option value="6" >6</option>
+          <option value="7" >7</option>
+          <option value="8" >8</option>
+          <option value="9" >9</option>
+          <option value="10" selected="selected" >10</option>
+          <option value="11" >11</option>
+          <option value="12" >12</option>
+          <option value="13" >13</option>
+          <option value="14" >14</option>
+          <option value="15" >15</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="laby-v-size">Taille Verticale : </label>
+      </td>
+      <td>
+        <select name="laby-v-size" onchange="laby.resize(int(document.getElementById('laby-h-size').value), int(this.value));" id="laby-v-size" >
+          <option value="5" >5</option>
+          <option value="6" >6</option>
+          <option value="7" >7</option>
+          <option value="8" >8</option>
+          <option value="9" >9</option>
+          <option value="10" selected="selected" >10</option>
+          <option value="11" >11</option>
+          <option value="12" >12</option>
+          <option value="13" >13</option>
+          <option value="14" >14</option>
+          <option value="15" >15</option>
+        </select>      
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="element">Élément à placer : </label>
+      </td>
+      <td>
+        <input type="radio" name="element" value="H" checked="checked"> Mur<br>
+        <input type="radio" name="element" value="C"> Pièce<br>
+        <input type="radio" name="element" value="X"> Super pièce<br>
+        <input type="radio" name="element" value="_"> Effacer
+      </td>
+    </tr>
+    <tr>
+
+   </table>
+   <hr>
+   {{ formset.management_form }}
+   {% for f in formset %}
+   <ul>
+      {{ f.as_ul }}
+   </ul>
+   {% endfor %}
+   <hr>
+   <input type="submit" value="Enregistrer">
+   <a href="{% url 'maze:index' %}">Retour</a>
+   <ul>
+   </ul>
+</form>
+<script>
+  /////////////// Canvas /////////////////////
+function preload() {
+  coinsPng = loadImage("{% static 'img/coins.png'%}");
+  superCoinsPng = loadImage("{% static 'img/super_coins.png'%}");
+  stoneFloor = loadImage("{% static 'img/floor.jpg'%}");
+  hWall = loadImage("{% static 'img/h_wall.jpg'%}");
+  vWall = loadImage("{% static 'img/v_wall.jpg'%}");
+  soundFormats('mp3', 'ogg');
+  coinSound = loadSound("{% static 'sounds/coin.mp3'%}");
+  superCoinSound = loadSound("{% static 'sounds/super_coin.mp3'%}");
+}
+var players = []
+function setup() {
+  background('navajowhite');
+  frameRate(60);
+  laby = new Laby('canvas', game_layout||default_game);
+  {% for f in formset %}
+   {% if f.name.value %}
+    player = new Character(
+      {{ f.posX.value }},
+      {{ f.posY.value }},
+      '{{ f.direction.value }}',
+      '{{MEDIA_URL}}{{ f.sprite.value }}',
+      {{ f.downIndex.value }},
+      {% if f.clockWise.value %}true{% else %}false{% endif %},
+      {{ f.nbHPix.value }},
+      {{ f.nbVPix.value }},
+      );      
+    players.push(player);
+    {% endif %}
+  {% endfor %}
+
+}
+
+function draw() {
+  background('navajowhite');
+  laby.draw();
+  players.forEach(elt => elt.draw());
+}
+
+game_layout = {{ form.lvl_map.value|default_if_none:""|safe }}
+</script>
+</body>
+
+</html>

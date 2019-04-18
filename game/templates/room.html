@@ -1,0 +1,365 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Partie {{ game.name }}</title>
+  <script src='{% static "third-party/interpreter/acorn_interpreter.js" %}'></script>
+  <script src='{% static "third-party/blockly/blockly_compressed.js" %}'></script>
+  <script src='{% static "third-party/blockly/blocks_compressed.js" %}'></script>
+  <script src='{% static "third-party/blockly/javascript_compressed.js" %}'></script>
+  <script src='{% static "third-party/blockly/msg/js/fr.js" %}'></script>
+
+  <script src='{% static "third-party/p5/p5.js" %}'></script>
+  <script src='{% static "third-party/p5/p5.sound.js" %}'></script>  
+
+  <script src='{% static "js/initApi.js" %}'></script>
+  <script src='{% static "js/maze_blocks.js" %}'></script>
+  <script src='{% static "js/maze.js" %}'></script>
+  <script src='{% static "js/character.js" %}'></script>
+  
+  <script>
+  <!-- on a besoin de super_coin pour afficher sur le bloc personnalisé -->
+  var super_coin='{% static "third-party/blockly/media/super_coin.png" %}'
+  game_layout = {{ game.level.lvl_map|safe }}
+
+  </script>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: sans-serif;
+    }
+    h1 {
+      font-weight: normal;
+      font-size: 140%;
+    }
+    #capacity {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <!-- Titres -->
+    <p style="float:right;">
+      Bonjour {{ user }}<br>
+      <a href="{% url 'chat:index' %}">Quitter la partie</a><br>
+      
+    </p>
+    <h1>{{ game.name }} : {{ game.level.name }}</h1>
+    
+  <p>
+    <button onclick="parseAndLoad()" id="parseButton">Parse</button>
+    <button onclick="startCode()" id="startButton">Run</button>
+    <button onclick="reset()" id="resetButton" disabled="disabled">Interrupt</button>
+    
+    <input type="button" onclick="validateCode();" id="validateButton" value="Valider">
+    
+    <p><b>Il reste <span id="capacity"></span> bloc(s) à utiliser.</b></p>
+  </p>
+
+  <div id="statusDiv"></div>
+
+  <!-- Première ligne -->
+  <div style="width: 100%">
+    <!-- Blockly 1 -->
+    <div id="blocklyDiv"
+        style="display: inline-block; height: 500px; width: 40%"></div>
+    <!-- Code 1 -->
+    <textarea id="output1" disabled="disabled"
+        style="display: inline-block; height: 480px; width: 20%;">
+    </textarea>
+    <!-- Canevas P5 -->
+    <div id="canvas" style="float:right"></div>
+  </div>
+  
+  <!-- Seconde ligne -->
+  <div style="width: 100%">
+    <!-- Blockly 2 -->
+    <div id="blocklyDiv2"
+        style="display: none; height: 480px; width: 40%"></div>
+    <!-- Code 2 -->
+    <textarea id="output2" disabled="disabled"
+        style="display: inline-block; height: 480px; width: 20%;">
+    </textarea>
+  </div>
+  
+  <!-- Chat -->
+  <textarea id="chat-log" cols="100" rows="15" disabled="disabled"></textarea><br/>
+  <input id="chat-message-input" type="text" size="100"/><br/>
+  <input id="chat-message-submit" type="button" value="Envoyer"/><br/>
+    
+
+  <!-- Toolbox pour blockly -->
+  <xml id="toolbox" style="display: none">
+      {% for tool in game.level.blocks.all %}
+      <block type="{{ tool }}"></block>
+      {% endfor %}
+  </xml>
+
+  
+<script>
+  var parseButton = document.getElementById('parseButton');
+  var startButton = document.getElementById('startButton');
+  var resetButton = document.getElementById('resetButton');
+  var validateButton = document.getElementById('validateButton');
+  var statusDiv = document.getElementById('statusDiv');
+  var output2 = document.getElementById('output2');
+  var chatLog = document.getElementById('chat-log');
+
+  var myInterpreter = null;
+  var myInterpreter2 = null;
+  var interpreters = [];
+
+  var latestCode = null;
+  var latestCode2 = null;
+  var codes = [];
+
+  var characters = []; // Les personnages disponibles pour cette partie
+  var players = []; // Les joueurs qui se connectent
+  var maxPlayers = null;
+
+  var player = nextPlayer = null;
+  var currentPlayer = 0;
+
+  var playerPos = null; // Sera initialisé à la connection via websocket
+
+	Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+	Blockly.JavaScript.addReservedWords('highlightBlock');
+
+  var workspace = Blockly.inject('blocklyDiv', {
+		media: '{% static "third-party/blockly/media/" %}',
+        maxBlocks: {{ game.level.maxBlocks }},
+        trashcan: true,
+        toolbox: document.getElementById('toolbox')});
+  function onchange(event) {
+      document.getElementById('capacity').textContent =
+          workspace.remainingCapacity();
+  }
+  workspace.addChangeListener(onchange);
+  onchange();
+  
+  var workspace2 = Blockly.inject('blocklyDiv2', {
+		media: '{% static "third-party/blockly/media/" %}',
+        trashcan: true,
+        toolbox: document.getElementById('toolbox')});
+  //~ Blockly.Xml.domToWorkspace(document.getElementById('start_blocks'),
+                               //~ workspace);
+  
+  
+  function validateCode() {
+    latestCode = Blockly.JavaScript.workspaceToCode(workspace);
+    document.getElementById('output1').value = latestCode;
+    var statusP = document.createElement('P');
+    var statusText = document.createTextNode('Joueur 1 prêt');
+    statusP.appendChild(statusText);
+    statusDiv.appendChild(statusP);
+    chatSocket.send(JSON.stringify({
+        'action': 'code',
+        'message': latestCode,
+      }))
+    }
+  function parseAndLoad() {
+	// Clear the program output.
+
+	//~ latestCode = Blockly.JavaScript.workspaceToCode(workspace);
+	//~ latestCode2 = Blockly.JavaScript.workspaceToCode(workspace2);
+
+	workspace.highlightBlock(null);
+	workspace2.highlightBlock(null);
+		
+	myInterpreter = new Interpreter(latestCode, initApi);
+	myInterpreter2 = new Interpreter(latestCode2, initApi);
+
+	myInterpreter.workspace = workspace;
+	myInterpreter2.workspace = workspace2;
+
+	myInterpreter.player = players[0];
+	myInterpreter2.player = players[1];
+
+	interpreters = [myInterpreter, myInterpreter2];
+
+	interpreters.forEach( (val,_) => val.over = false);
+  
+	currentPlayer = 0;
+  }
+  
+  function startCode() {
+    startButton.disabled = 'disabled';
+    parseButton.disabled = 'disabled';
+    resetButton.disabled = null;
+    stepCode();
+  }
+  
+  function stepCode() {
+    player = interpreters[currentPlayer]
+    nextPlayer  = interpreters[(currentPlayer + 1 ) % 2]
+    
+    if (player.run() && !player.over) {
+      if ( ['moveForward','turnLeft','turnRight'].includes(player.value)) {
+        currentPlayer = (currentPlayer + 1 ) % 2;
+      }
+      setTimeout(stepCode, 10);
+      return
+    }
+    player.over = true;
+    player.workspace.highlightBlock(null);
+    if (!nextPlayer.over) {
+      currentPlayer = (currentPlayer + 1 ) % 2;
+      setTimeout(stepCode, 10);
+    } else {
+      startButton.disabled = null;
+      parseButton.disabled = null;
+      resetButton.disabled = 'disabled';
+      console.log('All done');
+      codes = [];
+    }
+  }
+  
+  function reset() {
+    interpreters.forEach( (val,_) => val.over = true);
+    setTimeout( function() {
+      interpreters.forEach( (val,_) => val.workspace.highlightBlock(null));
+    },2000);
+  }
+
+  /////////////// Canvas /////////////////////
+  function preload() {
+    coinsPng = loadImage("{% static 'img/coins.png'%}");
+    superCoinsPng = loadImage("{% static 'img/super_coins.png'%}");
+    stoneFloor = loadImage("{% static 'img/floor.jpg'%}");
+    hWall = loadImage("{% static 'img/h_wall.jpg'%}");
+    vWall = loadImage("{% static 'img/v_wall.jpg'%}");
+    soundFormats('mp3', 'ogg');
+    coinSound = loadSound("{% static 'sounds/coin.mp3'%}");
+    superCoinSound = loadSound("{% static 'sounds/super_coin.mp3'%}");
+  }
+
+  function setup() {
+    background('navajowhite');
+    frameRate(60);
+    laby = new Laby('canvas', game_layout||default_game);
+    {% for c in game.level.character_set.all %}
+      p = new Character(
+        {{ c.posX }},
+        {{ c.posY }},
+        '{{ c.direction }}',
+        '{{MEDIA_URL}}{{ c.sprite }}',
+        {{ c.downIndex }},
+        {% if c.clockWise %}true{% else %}false{% endif %},
+        {{ c.nbHPix }},
+        {{ c.nbVPix }},
+        );      
+      characters.push(p);
+    {% endfor %}
+  }
+
+  function draw() {
+    background('navajowhite');
+    laby.draw();
+    players.forEach(p => p.draw());
+  }
+  
+  // Chat
+  ////////////////////
+  var chatSocket = new WebSocket(
+      'ws://' + window.location.host +
+      '/ws/chat/' + {{ game.id }} + '/' );
+
+  chatSocket.onmessage = function(e) {
+    var data = JSON.parse(e.data);
+    var action = data['action']
+    
+    switch (action) {
+      case 'chat':
+        var message = data['message'];
+        document.querySelector('#chat-log').value += (message + '\n');
+        break;
+      
+      case 'code':
+        var code = data['message'];
+        var pPos = data['position'];
+        codes[pPos] = code;
+        console.log('code received for player %s', pPos);
+        output2.value = code;
+        var nb_codes = codes.filter(_ => {return true} ).length;
+        // On a autant de codes renseignés que de joueurs
+        if (nb_codes == maxPlayers) {
+          console.log('All codes received');
+          workspace.highlightBlock(null);
+          workspace2.highlightBlock(null);
+            
+          myInterpreter = new Interpreter(codes[0], initApi);
+          myInterpreter2 = new Interpreter(codes[1], initApi);
+
+          myInterpreter.workspace = workspace;
+          myInterpreter2.workspace = workspace2;
+
+          myInterpreter.player = players[0];
+          myInterpreter2.player = players[1];
+
+          interpreters = [myInterpreter, myInterpreter2];
+
+          interpreters.forEach( (val,_) => val.over = false);
+          
+          currentPlayer = 0;
+          
+          startCode();
+        }
+        
+        break;      
+      
+      case 'connection':
+        console.log('Incoming connection from %s at position %s/%s', data['user'], data['position']+1, data['max_players']);
+        chatLog.value += data['user'] + ' a rejoint la partie\n'
+        maxPlayers = data['max_players']; // Nombre de joueurs prévus
+        if (data['user'] === '{{ user.username }}') {
+          playerPos = data['position']; // Auto notification de connexion -> on mémorise notre place dans le jeu
+        }
+        var waitSetup = function() { // On attend que les personnage P5js soient prêts
+          if (characters.length==0) {
+            setTimeout(waitSetup, 5);
+          } else {
+            // On finit par mettre à jour les joueurs connectés
+            data['players'].forEach( p => {
+                players[p[0]] = characters[p[0]];
+                players[p[0]].name = p[1];
+              })
+          }
+        }
+        waitSetup();
+        break;
+      
+      case 'disconnection':
+        console.log('Disconnection from %s at position %s/%s', data['user'], data['position']+1, data['max_players']);
+        alert(data['user'] + ' a quitté la partie');
+        window.location = {% url 'chat:index' %};
+        break;
+    }
+  };
+
+  chatSocket.onclose = function(e) {
+      console.error('Chat socket closed unexpectedly');
+  };
+
+  // Chat messages
+  document.querySelector('#chat-message-input').focus();
+  document.querySelector('#chat-message-input').onkeyup = function(e) {
+      if (e.keyCode === 13) {  // enter, return
+          document.querySelector('#chat-message-submit').click();
+      }
+  };
+
+  document.querySelector('#chat-message-submit').onclick = function(e) {
+      var messageInputDom = document.querySelector('#chat-message-input');
+      var message = messageInputDom.value;
+      chatSocket.send(JSON.stringify({
+          'action': 'chat',
+          'message': message
+      }));
+
+      messageInputDom.value = '';
+  };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<!--
+   character_preview.html
+   
+   Copyright 2019 Live session user <kubuntu@kubuntu>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA.
+   
+   
+-->
+
+<head>
+   <meta charset="utf-8" />
+   <title>Aperçu d'un personnage</title>
+   <script src="{% static 'third-party/p5/p5.js' %}"></script>
+   <script src="{% static 'js/character.js' %}"></script>
+</head>
+
+<body>
+   <h1>{{ character.name }}</h1>
+   <input type="button" value="tourner à gauche" onclick="character.turnLeft();">
+   <input type="button" value="tourner à droite" onclick="character.turnRight();">
+   <input type="button" value="avance" onclick="character.move(50);">
+   <br><br>
+   <div style="width:500px; height:500px; border: solid black 1px; background-color: antiquewhite;" id="canvas"></div>
+ 
+   <script>
+      var canvas;
+      var sprite;
+      var character;
+      function preload() {
+         sprite = "{{ character.sprite.url }}";
+      }
+      function setup() {
+         canvas = createCanvas(500, 500);
+         canvas.parent(document.getElementById('canvas'));
+         character = new Character(
+            {{ character.posX }},
+            {{ character.posY }},
+            '{{ character.direction }}',
+            '{{ character.sprite.url }}',
+            {{ character.downIndex }},
+            {% if character.clockWise %}true{% else %}false{% endif %},
+            {{ character.nbHPix }},
+            {{ character.nbVPix }},
+            );
+      }
+      function draw() {
+         background('navajowhite');
+         character.draw();
+      }
+   </script>
+</body>
+
+</html>

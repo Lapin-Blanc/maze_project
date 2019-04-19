@@ -63,7 +63,7 @@
     {% endfor %}
     
     <!-- Canevas P5 -->
-    <div id="canvas" style="position:absolute;top:130px;right:10px;"></div>
+    <div id="canvas" style="position:absolute;top:95px;right:10px;"></div>
   </div>
   
   <!-- Seconde ligne -->
@@ -109,11 +109,15 @@
 	Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
 	Blockly.JavaScript.addReservedWords('highlightBlock');
 
+  window.LoopTrap = 20;
+  Blockly.JavaScript.INFINITE_LOOP_TRAP =
+      'if (--trap == 0) throw "Boucle infinie.";\n';
   //~ Blockly.Xml.domToWorkspace(document.getElementById('start_blocks'),
                                //~ workspace);
   
   
   function validateCode() {
+    validateButton.disabled = "disabled";
     latestCode = Blockly.JavaScript.workspaceToCode(players[playerPos].workspace);
     var statusP = document.createElement('P');
     var statusText = document.createTextNode('Joueur 1 prêt');
@@ -126,38 +130,43 @@
     }  
   
   function startCode() {
-    validateButton.disabled = "disabled";
     stepCode();
   }
   
   function stepCode() {
-    iPlayer = interpreters[currentPlayer]
-    nextIPlayer  = interpreters[(currentPlayer + 1 ) % maxPlayers]
-    
-    if (iPlayer.run() && !iPlayer.over) {
-      if ( ['moveForward','turnLeft','turnRight'].includes(iPlayer.value)) {
-        currentPlayer = (currentPlayer + 1 ) % maxPlayers;
+    try {
+      iPlayer = interpreters[currentPlayer]
+      nextIPlayer  = interpreters[(currentPlayer + 1 ) % maxPlayers]
+      
+      if (iPlayer.run() && !iPlayer.over) {
+        if ( ['moveForward','turnLeft','turnRight'].includes(iPlayer.value)) {
+          currentPlayer = (currentPlayer + 1 ) % maxPlayers;
+        }
+        setTimeout(stepCode, 10);
+        return
       }
-      setTimeout(stepCode, 10);
-      return
-    }
-    iPlayer.over = true;
-    iPlayer.player.workspace.highlightBlock(null);
-    if (!nextIPlayer.over) {
-      currentPlayer = (currentPlayer + 1 ) % maxPlayers;
-      setTimeout(stepCode, 10);
-    } else {
-      validateButton.disabled = null;
-      console.log('All done');
-      codes = [];
+      iPlayer.over = true;
+      iPlayer.player.workspace.highlightBlock(null);
+      if (!nextIPlayer.over) {
+        currentPlayer = (currentPlayer + 1 ) % maxPlayers;
+        setTimeout(stepCode, 10);
+      } else {
+        validateButton.disabled = null;
+        console.log('All done');
+        codes = [];
+      }
+    } catch (error) { 
+      alert(error);
+      reset();
     }
   }
   
   function reset() {
-    interpreters.forEach( (val,_) => val.over = true);
+    interpreters.forEach( val => val.over = true);
     setTimeout( function() {
-      interpreters.forEach( (val,_) => val.workspace.highlightBlock(null));
-    },2000);
+      interpreters.forEach( val => val.player.workspace.highlightBlock(null));
+    },500);
+    validateButton.disabled = null;
   }
 
   /////////////// Canvas /////////////////////

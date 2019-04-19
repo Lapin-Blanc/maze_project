@@ -1,4 +1,7 @@
   function initApi(interpreter, scope) {
+    //////////////////////////////////////////
+    // Gestion basique des boucles infinies
+    interpreter.setProperty(scope, 'trap', window.LoopTrap);
     
     ///////////////////////////////////////////////
     // Add an API function for highlighting blocks.

@@ -11,7 +11,7 @@
         interpreter.createAsyncFunction(wrapper));
 
     function highlightBlock(id, callback) {
-      interpreter.workspace.highlightBlock(id)
+      interpreter.player.workspace.highlightBlock(id)
       setTimeout(callback, 500, 'highlighted block (' + id + ')');
     }
 

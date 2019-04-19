@@ -48,9 +48,11 @@
     <h1>{{ game.name }} : {{ game.level.name }}</h1>
     
   <p>
+<!--
     <button onclick="parseAndLoad()" id="parseButton">Parse</button>
     <button onclick="startCode()" id="startButton">Run</button>
     <button onclick="reset()" id="resetButton" disabled="disabled">Interrupt</button>
+-->
     
     <input type="button" onclick="validateCode();" id="validateButton" value="Valider">
     
@@ -61,33 +63,34 @@
 
   <!-- Première ligne -->
   <div style="width: 100%">
-    <!-- Blockly 1 -->
-    <div id="blocklyDiv"
-        style="display: inline-block; height: 500px; width: 40%"></div>
+    
+    <!-- Blockly workspaces -->
+    {% for c in game.level.character_set.all %}
+      <div id="blocklyDiv{{ forloop.counter0 }}"
+          style="position:absolute; left:-1000px; height: 500px; width: 50%"></div>
+    {% endfor %}
+    
+    
     <!-- Code 1 -->
+<!--
     <textarea id="output1" disabled="disabled"
         style="display: none; height: 480px; width: 20%;">
     </textarea>
+-->
     <!-- Canevas P5 -->
-    <div id="canvas" style="float:right"></div>
+    <div id="canvas" style="position:absolute;top:130px;right:10px;"></div>
   </div>
   
   <!-- Seconde ligne -->
-  <div style="width: 100%">
-    <!-- Blockly 2 -->
-    <div id="blocklyDiv2"
-        style="display: none; height: 480px; width: 40%"></div>
-    <!-- Code 2 -->
-    <textarea id="output2" disabled="disabled"
-        style="display: none; height: 480px; width: 20%;">
-    </textarea>
+  <div style="width: 50%; margin:10px;">
+    <!-- Chat -->
+<!--
+    <textarea id="chat-log" rows="15" disabled="disabled" style="width:100%"></textarea><br>
+-->
+    <div id="chat-log" style="width:100%;height:250px;border:solid lightgrey 1px;"></div>
+    <input id="chat-message-input" type="text" style="width:85%; %">
+    <input id="chat-message-submit" type="button" style="width:13%;float:right" value="Envoyer">
   </div>
-  
-  <!-- Chat -->
-  <textarea id="chat-log" cols="100" rows="15" disabled="disabled"></textarea><br/>
-  <input id="chat-message-input" type="text" size="100"/><br/>
-  <input id="chat-message-submit" type="button" value="Envoyer"/><br/>
-    
 
   <!-- Toolbox pour blockly -->
   <xml id="toolbox" style="display: none">
@@ -103,7 +106,6 @@
   var resetButton = document.getElementById('resetButton');
   var validateButton = document.getElementById('validateButton');
   var statusDiv = document.getElementById('statusDiv');
-  var output2 = document.getElementById('output2');
   var chatLog = document.getElementById('chat-log');
 
   var myInterpreter = null;
@@ -116,9 +118,10 @@
 
   var characters = []; // Les personnages disponibles pour cette partie
   var players = []; // Les joueurs qui se connectent
-  var maxPlayers = null;
+  var workspaces = [];
+  var maxPlayers = {{ game.level.character_set.count }}; // Le nombre de joueurs prévus pour la partie
 
-  var player = nextPlayer = null;
+  var iPlayer = nextIPlayer = null; // interpréteurs des joueurs
   var currentPlayer = 0;
 
   var playerPos = null; // Sera initialisé à la connection via websocket
@@ -126,29 +129,13 @@
 	Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
 	Blockly.JavaScript.addReservedWords('highlightBlock');
 
-  var workspace = Blockly.inject('blocklyDiv', {
-		media: '{% static "third-party/blockly/media/" %}',
-        maxBlocks: {{ game.level.maxBlocks }},
-        trashcan: true,
-        toolbox: document.getElementById('toolbox')});
-  function onchange(event) {
-      document.getElementById('capacity').textContent =
-          workspace.remainingCapacity();
-  }
-  workspace.addChangeListener(onchange);
-  onchange();
-  
-  var workspace2 = Blockly.inject('blocklyDiv2', {
-		media: '{% static "third-party/blockly/media/" %}',
-        trashcan: true,
-        toolbox: document.getElementById('toolbox')});
   //~ Blockly.Xml.domToWorkspace(document.getElementById('start_blocks'),
                                //~ workspace);
   
   
   function validateCode() {
-    latestCode = Blockly.JavaScript.workspaceToCode(workspace);
-    document.getElementById('output1').value = latestCode;
+    latestCode = Blockly.JavaScript.workspaceToCode(players[playerPos].workspace);
+    //~ document.getElementById('output1').value = latestCode;
     var statusP = document.createElement('P');
     var statusText = document.createTextNode('Joueur 1 prêt');
     statusP.appendChild(statusText);
@@ -157,31 +144,7 @@
         'action': 'code',
         'message': latestCode,
       }))
-    }
-  function parseAndLoad() {
-	// Clear the program output.
-
-	//~ latestCode = Blockly.JavaScript.workspaceToCode(workspace);
-	//~ latestCode2 = Blockly.JavaScript.workspaceToCode(workspace2);
-
-	workspace.highlightBlock(null);
-	workspace2.highlightBlock(null);
-		
-	myInterpreter = new Interpreter(latestCode, initApi);
-	myInterpreter2 = new Interpreter(latestCode2, initApi);
-
-	myInterpreter.workspace = workspace;
-	myInterpreter2.workspace = workspace2;
-
-	myInterpreter.player = players[0];
-	myInterpreter2.player = players[1];
-
-	interpreters = [myInterpreter, myInterpreter2];
-
-	interpreters.forEach( (val,_) => val.over = false);
-  
-	currentPlayer = 0;
-  }
+    }  
   
   function startCode() {
     startButton.disabled = 'disabled';
@@ -191,20 +154,20 @@
   }
   
   function stepCode() {
-    player = interpreters[currentPlayer]
-    nextPlayer  = interpreters[(currentPlayer + 1 ) % 2]
+    iPlayer = interpreters[currentPlayer]
+    nextIPlayer  = interpreters[(currentPlayer + 1 ) % maxPlayers]
     
-    if (player.run() && !player.over) {
-      if ( ['moveForward','turnLeft','turnRight'].includes(player.value)) {
-        currentPlayer = (currentPlayer + 1 ) % 2;
+    if (iPlayer.run() && !iPlayer.over) {
+      if ( ['moveForward','turnLeft','turnRight'].includes(iPlayer.value)) {
+        currentPlayer = (currentPlayer + 1 ) % maxPlayers;
       }
       setTimeout(stepCode, 10);
       return
     }
-    player.over = true;
-    player.workspace.highlightBlock(null);
-    if (!nextPlayer.over) {
-      currentPlayer = (currentPlayer + 1 ) % 2;
+    iPlayer.over = true;
+    iPlayer.player.workspace.highlightBlock(null);
+    if (!nextIPlayer.over) {
+      currentPlayer = (currentPlayer + 1 ) % maxPlayers;
       setTimeout(stepCode, 10);
     } else {
       startButton.disabled = null;
@@ -272,7 +235,8 @@
     switch (action) {
       case 'chat':
         var message = data['message'];
-        document.querySelector('#chat-log').value += (message + '\n');
+        //~ document.querySelector('#chat-log').value += (message + '\n');
+        chatLog.innerText += (message + '\n');
         break;
       
       case 'code':
@@ -280,26 +244,18 @@
         var pPos = data['position'];
         codes[pPos] = code;
         console.log('code received for player %s', pPos);
-        output2.value = code;
         var nb_codes = codes.filter(_ => {return true} ).length;
         // On a autant de codes renseignés que de joueurs
         if (nb_codes == maxPlayers) {
           console.log('All codes received');
-          workspace.highlightBlock(null);
-          workspace2.highlightBlock(null);
-            
-          myInterpreter = new Interpreter(codes[0], initApi);
-          myInterpreter2 = new Interpreter(codes[1], initApi);
+          codes.forEach( (c,idx) => {
+              players[idx].workspace.highlightBlock(null);
+              var i = new Interpreter(c, initApi);
+              i.player = players[idx];
+              interpreters.push(i);
+            });
 
-          myInterpreter.workspace = workspace;
-          myInterpreter2.workspace = workspace2;
-
-          myInterpreter.player = players[0];
-          myInterpreter2.player = players[1];
-
-          interpreters = [myInterpreter, myInterpreter2];
-
-          interpreters.forEach( (val,_) => val.over = false);
+          interpreters.forEach( val => val.over = false);
           
           currentPlayer = 0;
           
@@ -311,19 +267,33 @@
       case 'connection':
         console.log('Incoming connection from %s at position %s/%s', data['user'], data['position']+1, data['max_players']);
         chatLog.value += data['user'] + ' a rejoint la partie\n'
-        maxPlayers = data['max_players']; // Nombre de joueurs prévus
         if (data['user'] === '{{ user.username }}') {
           playerPos = data['position']; // Auto notification de connexion -> on mémorise notre place dans le jeu
+          //~ document.getElementById('blocklyDiv'+playerPos).style.z-index = maxPlayers;
+          document.getElementById('blocklyDiv'+playerPos).style.position = 'relative';
+          document.getElementById('blocklyDiv'+playerPos).style.left = '10px';
         }
         var waitSetup = function() { // On attend que les personnage P5js soient prêts
           if (characters.length==0) {
             setTimeout(waitSetup, 5);
           } else {
-            // On finit par mettre à jour les joueurs connectés
-            data['players'].forEach( p => {
+            if (data['players'].length === maxPlayers) {
+              data['players'].forEach( (p,idx) => {
                 players[p[0]] = characters[p[0]];
                 players[p[0]].name = p[1];
-              })
+                players[p[0]].workspace = Blockly.inject('blocklyDiv'+idx, {
+                  media: '{% static "third-party/blockly/media/" %}',
+                      maxBlocks: {{ game.level.maxBlocks }},
+                      trashcan: true,
+                      toolbox: document.getElementById('toolbox')});
+              });              
+              function onchange(event) {
+                  document.getElementById('capacity').textContent =
+                      players[playerPos].workspace.remainingCapacity();
+              }
+              players[playerPos].workspace.addChangeListener(onchange);
+              onchange();
+            }
           }
         }
         waitSetup();

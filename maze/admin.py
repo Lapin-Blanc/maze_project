@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Character, Level, Block
+from .models import Character, Level, Block, Pixel
 
 # Register your models here.
 class CharacterInline(admin.TabularInline):
@@ -17,3 +17,4 @@ class LevelAdmin(admin.ModelAdmin):
 admin.site.register(Character)
 admin.site.register(Level, LevelAdmin)
 admin.site.register(Block)
+admin.site.register(Pixel)

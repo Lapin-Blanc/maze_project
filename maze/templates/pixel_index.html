@@ -1,8 +1,8 @@
-<!-- maze/index.html -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <!--
-   index.html
+   character_preview.html
    
    Copyright 2019 Live session user <kubuntu@kubuntu>
    
@@ -26,18 +26,17 @@
 
 <head>
    <meta charset="utf-8" />
-   <title>Liste des labyrinthes</title>
+   <title>Personnages</title>
 </head>
 
 <body>
    <ul>
-      {% for level in levels %}
-         <li><a href="{% url 'maze:edit' level_id=level.id %}">{{ level.name }}</a></li>
+      {% for pixel in pixels %}
+         <li><a href="{% url 'maze:pixel_preview' pixel_id=pixel.id %}">{{ pixel.name }}</a></li>
       {% endfor %}
    </ul>
-   <p><a href="{% url 'maze:create' %}">Créer un nouveau labyrinthe</a></p>
-   <p><a href="{% url 'accounts:home' %}">Accueil</a></p>
+   <p><a href="{% url 'maze:pixel_create' %}">Créer un nouveau personnage</a></p>
+   <p><a href="{% url 'maze:index' %}">Liste des labyrinthes</a></p>
 </body>
 
 </html>
- 

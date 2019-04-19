@@ -21,8 +21,8 @@ function Laby(parent, game_layout) {
   const COINS = ['C','X'] // Available coins
 
   var coinPos = 0; // initialize coin rotation index
-    
-  this.map = game_layout;
+  this.map = game_layout ? game_layout : default_game;
+  console.log('GAME LAYOUT', this.map);
   this.yBlocks = this.map.length;
   this.xBlocks = this.map[0].length;
   this.canvas = createCanvas(this.xBlocks*this.TILE_SIZE, this.yBlocks*this.TILE_SIZE);

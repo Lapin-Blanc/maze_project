@@ -50,11 +50,11 @@ li {
 </head>
 
 <body>
-<div id="canvas" style="border:solid black 1px;float:right"></div> 
+<div id="canvas" style="float:right"></div> 
 <form method="post" enctype="multipart/form-data" >
    {% csrf_token %}
    <table>      
-      {{ form }}
+      {{ form.as_p }}
     <tr>
       <td>
         <label for="laby-h-size">Taille horizontale : </label>
@@ -110,6 +110,7 @@ li {
 
    </table>
    <hr>
+   <h3>Personnages<a href="{% url 'maze:pixel_create' %}">&nbsp;[nouveau]</a></h3>
    {{ formset.management_form }}
    {% for f in formset %}
    <ul>
@@ -145,11 +146,11 @@ function setup() {
       {{ f.posX.value }},
       {{ f.posY.value }},
       '{{ f.direction.value }}',
-      '{{MEDIA_URL}}{{ f.sprite.value }}',
-      {{ f.downIndex.value }},
-      {% if f.clockWise.value %}true{% else %}false{% endif %},
-      {{ f.nbHPix.value }},
-      {{ f.nbVPix.value }},
+      '{{MEDIA_URL}}{{ f.instance.pixel.sprite }}',
+      {{ f.instance.pixel.downIndex }},
+      {% if f.instance.pixel.clockWise %}true{% else %}false{% endif %},
+      {{ f.instance.pixel.nbHPix }},
+      {{ f.instance.pixel.nbVPix }},
       );      
     players.push(player);
     {% endif %}

@@ -1,11 +1,15 @@
+# maze.urls
 from django.urls import path
-from .views import index, edit_level, char_preview
+from .views import index, edit_level, pixel_preview, pixel_index
 
 app_name = 'maze'
 urlpatterns = [
-    path('create/', edit_level, name='create'),
     path('edit/<int:level_id>/', edit_level, name='edit'),
-    path('character/<int:char_id>/', char_preview, name='char_preview'),
+    path('create/', edit_level, name='create'),
     path('', index, name='index'),
+
+    path('pixel/edit/<int:pixel_id>/', pixel_preview, name='pixel_preview'),
+    path('pixel/create', pixel_preview, name='pixel_create'),
+    path('pixel/', pixel_index, name='pixel_index'),
 ]
  

@@ -39,8 +39,6 @@
       {% csrf_token %}
       {{ form.as_p }}
       <input type="submit" value="Enregistrer">
-      &nbsp;<a href="{% url 'maze:pixel_index' %}">[personnages]</a>
-      &nbsp;<a href="{% url 'maze:index' %}">[niveaux]</a>
    </form>
    <br>
    <input type="button" value="tourner à gauche" onclick="character.turnLeft();">

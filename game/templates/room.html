@@ -43,55 +43,37 @@
     <p style="float:right;">
       Bonjour {{ user }}<br>
       <a href="{% url 'chat:index' %}">Quitter la partie</a><br>
-      
     </p>
+    
     <h1>{{ game.name }} : {{ game.level.name }}</h1>
     
-  <p>
-<!--
-    <button onclick="parseAndLoad()" id="parseButton">Parse</button>
-    <button onclick="startCode()" id="startButton">Run</button>
-    <button onclick="reset()" id="resetButton" disabled="disabled">Interrupt</button>
--->
-    
-    <input type="button" onclick="validateCode();" id="validateButton" value="Valider">
-    
-    <p><b>Il reste <span id="capacity"></span> bloc(s) à utiliser.</b></p>
-  </p>
+    <p>
+      <b>Il reste <span id="capacity"></span> bloc(s) à utiliser.</b>
+      <input type="button" onclick="validateCode();" id="validateButton" value="Valider">
+    </p>
 
-  <div id="statusDiv"></div>
+  
 
   <!-- Première ligne -->
   <div style="width: 100%">
-    
     <!-- Blockly workspaces -->
     {% for c in game.level.character_set.all %}
       <div id="blocklyDiv{{ forloop.counter0 }}"
           style="position:absolute; left:-1000px; height: 500px; width: 50%"></div>
     {% endfor %}
     
-    
-    <!-- Code 1 -->
-<!--
-    <textarea id="output1" disabled="disabled"
-        style="display: none; height: 480px; width: 20%;">
-    </textarea>
--->
     <!-- Canevas P5 -->
     <div id="canvas" style="position:absolute;top:130px;right:10px;"></div>
   </div>
   
   <!-- Seconde ligne -->
-  <div style="width: 50%; margin:10px;">
+  <div style="width: 50%; margin:10px;display:inline-block; ">
     <!-- Chat -->
-<!--
-    <textarea id="chat-log" rows="15" disabled="disabled" style="width:100%"></textarea><br>
--->
-    <div id="chat-log" style="width:100%;height:250px;border:solid lightgrey 1px;"></div>
+    <div id="chat-log" style="overflow-y: scroll;width:100%;height:250px;border:solid lightgrey 1px;"></div>
     <input id="chat-message-input" type="text" style="width:85%; %">
     <input id="chat-message-submit" type="button" style="width:13%;float:right" value="Envoyer">
   </div>
-
+  <div id="statusDiv" style="overflow-y: scroll;display:inline-block; width:30%; height: 263px; border:solid lightgrey 1px;"></div>
   <!-- Toolbox pour blockly -->
   <xml id="toolbox" style="display: none">
       {% for tool in game.level.blocks.all %}
@@ -108,18 +90,16 @@
   var statusDiv = document.getElementById('statusDiv');
   var chatLog = document.getElementById('chat-log');
 
-  var myInterpreter = null;
-  var myInterpreter2 = null;
   var interpreters = [];
 
   var latestCode = null;
-  var latestCode2 = null;
   var codes = [];
 
   var characters = []; // Les personnages disponibles pour cette partie
   var players = []; // Les joueurs qui se connectent
   var workspaces = [];
-  var maxPlayers = {{ game.level.character_set.count }}; // Le nombre de joueurs prévus pour la partie
+  // Le nombre de joueurs prévus pour la partie
+  var maxPlayers = {{ game.level.character_set.count }};
 
   var iPlayer = nextIPlayer = null; // interpréteurs des joueurs
   var currentPlayer = 0;
@@ -135,7 +115,6 @@
   
   function validateCode() {
     latestCode = Blockly.JavaScript.workspaceToCode(players[playerPos].workspace);
-    //~ document.getElementById('output1').value = latestCode;
     var statusP = document.createElement('P');
     var statusText = document.createTextNode('Joueur 1 prêt');
     statusP.appendChild(statusText);
@@ -147,9 +126,7 @@
     }  
   
   function startCode() {
-    startButton.disabled = 'disabled';
-    parseButton.disabled = 'disabled';
-    resetButton.disabled = null;
+    validateButton.disabled = "disabled";
     stepCode();
   }
   
@@ -170,9 +147,7 @@
       currentPlayer = (currentPlayer + 1 ) % maxPlayers;
       setTimeout(stepCode, 10);
     } else {
-      startButton.disabled = null;
-      parseButton.disabled = null;
-      resetButton.disabled = 'disabled';
+      validateButton.disabled = null;
       console.log('All done');
       codes = [];
     }
@@ -206,11 +181,11 @@
         {{ c.posX }},
         {{ c.posY }},
         '{{ c.direction }}',
-        '{{MEDIA_URL}}{{ c.sprite }}',
-        {{ c.downIndex }},
-        {% if c.clockWise %}true{% else %}false{% endif %},
-        {{ c.nbHPix }},
-        {{ c.nbVPix }},
+        '{{MEDIA_URL}}{{ c.pixel.sprite }}',
+        {{ c.pixel.downIndex }},
+        {% if c.pixel.clockWise %}true{% else %}false{% endif %},
+        {{ c.pixel.nbHPix }},
+        {{ c.pixel.nbVPix }},
         );      
       characters.push(p);
     {% endfor %}
@@ -235,8 +210,8 @@
     switch (action) {
       case 'chat':
         var message = data['message'];
-        //~ document.querySelector('#chat-log').value += (message + '\n');
         chatLog.innerText += (message + '\n');
+        chatLog.scrollTop = chatLog.scrollHeight;
         break;
       
       case 'code':
@@ -266,7 +241,7 @@
       
       case 'connection':
         console.log('Incoming connection from %s at position %s/%s', data['user'], data['position']+1, data['max_players']);
-        chatLog.value += data['user'] + ' a rejoint la partie\n'
+        chatLog.innerText += data['user'] + ' a rejoint la partie\n'
         if (data['user'] === '{{ user.username }}') {
           playerPos = data['position']; // Auto notification de connexion -> on mémorise notre place dans le jeu
           //~ document.getElementById('blocklyDiv'+playerPos).style.z-index = maxPlayers;

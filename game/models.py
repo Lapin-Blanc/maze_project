@@ -6,7 +6,7 @@ from maze.models import Level
 
 # Create your models here.
 class Game(models.Model):
-    name = models.SlugField('nom')
+    name = models.CharField('nom', max_length=20)
     players = models.ManyToManyField(User)
     level = models.ForeignKey(Level, on_delete=models.CASCADE)
     is_over = models.BooleanField('terminé', default=False)

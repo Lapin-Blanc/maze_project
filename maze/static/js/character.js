@@ -1,4 +1,4 @@
-function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nbHPix, nbVPix ) {
+function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nbHPix, nbVPix, iconUrl ) {
 // Image préchargée, nombre de sprite horizontaux, verticaux
 // position 'UP', 'DOWN', 'LEFT', 'RIGHT'
 // et direction de départ
@@ -6,6 +6,11 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
   this.pX = this.nPosX = posX ? posX : 0;
   this.pY = this.nPosY = posY ? posY : 0;
   this.direction = direction;
+  
+  this.origPX = this.pX;
+  this.origPY = this.pY;
+  
+  
 
   var downIndex = downIndex ? downIndex : 0;
   var nbHPix = nbHPix ? nbHPix : 8;
@@ -38,11 +43,15 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
     default :
       this.dir = this.DOWN;    
   }
-  this.nDir = this.dir;
+  this.origDir = this.nDir = this.dir;
+  
   var pixWidth;
   var pixHeight;
 
-  var sprite = loadImage(spriteImgUrl, successCb);
+  this.sprite = loadImage(spriteImgUrl, successCb);
+  this.icon = iconUrl;
+  
+  this.winner = false;
 
   function successCb(img) {
     pixWidth = ~~(img.width/nbHPix);
@@ -63,14 +72,25 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
       }
     }
     // Have to move
-    if (this.pX < this.nPosX) this.pX++;
-    if (this.pY < this.nPosY) this.pY++;
-    if (this.pX > this.nPosX) this.pX--;
-    if (this.pY > this.nPosY) this.pY--;
-    
+    var hasMoved = false;
+    if (this.pX < this.nPosX) {this.pX++;hasMoved=true};
+    if (this.pY < this.nPosY) {this.pY++;hasMoved=true};
+    if (this.pX > this.nPosX) {this.pX--;hasMoved=true};
+    if (this.pY > this.nPosY) {this.pY--;hasMoved=true};
+    if (hasMoved) {
+      if ((this.pX == this.nPosX) && (this.pY == this.nPosY)) {
+        xIndex = this.pX/laby.TILE_SIZE;
+        yIndex = this.pY/laby.TILE_SIZE;
+        if (laby.map[yIndex][xIndex] === 'X') {
+          laby.map[yIndex][xIndex] = '_';
+          superCoinSound.play();
+          this.winner = true;
+        }
+      }
+    }
     // Draw image
     if (pixWidth && pixHeight) {
-      image(sprite, this.pX, this.pY, pixWidth, pixHeight, (this.dir%nbHPix)*pixWidth, ~~(this.dir/nbHPix)*pixHeight, pixWidth, pixHeight);
+      image(this.sprite, this.pX, this.pY, pixWidth, pixHeight, (this.dir%nbHPix)*pixWidth, ~~(this.dir/nbHPix)*pixHeight, pixWidth, pixHeight);
     }
   }
   
@@ -177,7 +197,7 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
           setTimeout(wait, 5)
         }
         else {
-          callback('moveForward')
+          callback('moveForward');
         }
       }
       wait();
@@ -187,7 +207,7 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
     this.move(laby.TILE_SIZE, callback);
   }
   
-  this.isPathForward = function() {
+  this.isPathForward = function(callback) {
     xIndex = this.pX/laby.TILE_SIZE;
     yIndex = this.pY/laby.TILE_SIZE;
     switch (this.dir) {
@@ -204,58 +224,59 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
         block = laby.map[yIndex][xIndex-1];
         break;
     }    
-    return OK.includes(block);
-  }
-  
-  this.isPathLeft = function() {
-    xIndex = this.pX/laby.TILE_SIZE;
-    yIndex = this.pY/laby.TILE_SIZE;
-    switch (this.dir) {
-      case this.DOWN :
-        block = laby.map[yIndex][xIndex+1];
-        break;
-      case this.RIGHT :
-        block = laby.map[yIndex-1][xIndex];
-        break;
-      case this.UP :
-        block = laby.map[yIndex][xIndex-1];
-        break;
-      case this.LEFT :
-        block = laby.map[yIndex+1][xIndex];
-        break;
-    }    
-    return OK.includes(block);
-  }
-  
-  this.isPathRight = function() {
-    xIndex = this.pX/laby.TILE_SIZE;
-    yIndex = this.pY/laby.TILE_SIZE;
-    switch (this.dir) {
-      case this.DOWN :
-        block = laby.map[yIndex][xIndex-1];
-        break;
-      case this.RIGHT :
-        block = laby.map[yIndex+1][xIndex];
-        break;
-      case this.UP :
-        block = laby.map[yIndex][xIndex+1];
-        break;
-      case this.LEFT :
-        block = laby.map[yIndex-1][xIndex];
-        break;
-    }    
-    return OK.includes(block);
-  }
-  
-  this.notDone = function() {
-    xIndex = this.pX/laby.TILE_SIZE;
-    yIndex = this.pY/laby.TILE_SIZE;
-    var finished = laby.map[yIndex][xIndex] === 'X';
-    if (finished) {
-      laby.map[yIndex][xIndex] = '_';
-      return false;
+    if (callback) {
+      callback(OK.includes(block));
+    } else {
+      return OK.includes(block);
     }
-    return true;
+  }
+  
+  this.isPathLeft = function(callback) {
+    xIndex = this.pX/laby.TILE_SIZE;
+    yIndex = this.pY/laby.TILE_SIZE;
+    switch (this.dir) {
+      case this.DOWN :
+        block = laby.map[yIndex][xIndex+1];
+        break;
+      case this.RIGHT :
+        block = laby.map[yIndex-1][xIndex];
+        break;
+      case this.UP :
+        block = laby.map[yIndex][xIndex-1];
+        break;
+      case this.LEFT :
+        block = laby.map[yIndex+1][xIndex];
+        break;
+    }    
+    callback(OK.includes(block));
+  }
+  
+  this.isPathRight = function(callback) {
+    xIndex = this.pX/laby.TILE_SIZE;
+    yIndex = this.pY/laby.TILE_SIZE;
+    switch (this.dir) {
+      case this.DOWN :
+        block = laby.map[yIndex][xIndex-1];
+        break;
+      case this.RIGHT :
+        block = laby.map[yIndex+1][xIndex];
+        break;
+      case this.UP :
+        block = laby.map[yIndex][xIndex+1];
+        break;
+      case this.LEFT :
+        block = laby.map[yIndex-1][xIndex];
+        break;
+    }    
+    callback(OK.includes(block));
+  }
+  
+  this.notDone = function(callback) {
+    //~ xIndex = this.pX/laby.TILE_SIZE;
+    //~ yIndex = this.pY/laby.TILE_SIZE;
+    //~ return !laby.map[yIndex][xIndex] === 'X';
+    callback(!this.winner);
+    //~ return !this.winner;
   }
   
   /////////////// Moved //////////////////////

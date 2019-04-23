@@ -41,7 +41,7 @@
 <body>
   <!-- Titres -->
     <p style="float:right;">
-      Bonjour {{ user }}<br>
+      <img id="playerIcon">Bonjour {{ user }}<br>
       <a href="{% url 'chat:index' %}">Quitter la partie</a><br>
     </p>
     
@@ -63,17 +63,18 @@
     {% endfor %}
     
     <!-- Canevas P5 -->
-    <div id="canvas" style="position:absolute;top:95px;right:10px;"></div>
+    <div id="canvas" style="position:relative;display:inline-block;margin:5px;"></div>
   </div>
   
   <!-- Seconde ligne -->
   <div style="width: 50%; margin:10px;display:inline-block; ">
     <!-- Chat -->
-    <div id="chat-log" style="overflow-y: scroll;width:100%;height:250px;border:solid lightgrey 1px;"></div>
+    <div id="chat-log" style="overflow-y: scroll;width:100%;height:220px;border:solid lightgrey 1px;"></div>
     <input id="chat-message-input" type="text" style="width:85%; %">
     <input id="chat-message-submit" type="button" style="width:13%;float:right" value="Envoyer">
   </div>
-  <div id="statusDiv" style="overflow-y: scroll;display:inline-block; width:30%; height: 263px; border:solid lightgrey 1px;"></div>
+  <div id="playersList" style="height:265px;width:10%;display:inline-block;background-color:white"></div>
+  <div id="statusDiv" style="overflow-y: scroll;display:inline-block; width:30%; height: 223px; border:solid lightgrey 1px;"></div>
   <!-- Toolbox pour blockly -->
   <xml id="toolbox" style="display: none">
       {% for tool in game.level.blocks.all %}
@@ -89,6 +90,8 @@
   var validateButton = document.getElementById('validateButton');
   var statusDiv = document.getElementById('statusDiv');
   var chatLog = document.getElementById('chat-log');
+  var playersList = document.getElementById('playersList');
+  var playerIcon = document.getElementById('playerIcon');
 
   var interpreters = [];
 
@@ -109,7 +112,7 @@
 	Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
 	Blockly.JavaScript.addReservedWords('highlightBlock');
 
-  window.LoopTrap = 20;
+  window.LoopTrap = 50;
   Blockly.JavaScript.INFINITE_LOOP_TRAP =
       'if (--trap == 0) throw "Boucle infinie.";\n';
   //~ Blockly.Xml.domToWorkspace(document.getElementById('start_blocks'),
@@ -119,10 +122,6 @@
   function validateCode() {
     validateButton.disabled = "disabled";
     latestCode = Blockly.JavaScript.workspaceToCode(players[playerPos].workspace);
-    var statusP = document.createElement('P');
-    var statusText = document.createTextNode('Joueur 1 prêt');
-    statusP.appendChild(statusText);
-    statusDiv.appendChild(statusP);
     chatSocket.send(JSON.stringify({
         'action': 'code',
         'message': latestCode,
@@ -133,36 +132,64 @@
     stepCode();
   }
   
-  function stepCode() {
-    try {
-      iPlayer = interpreters[currentPlayer]
-      nextIPlayer  = interpreters[(currentPlayer + 1 ) % maxPlayers]
-      
-      if (iPlayer.run() && !iPlayer.over) {
-        if ( ['moveForward','turnLeft','turnRight'].includes(iPlayer.value)) {
-          currentPlayer = (currentPlayer + 1 ) % maxPlayers;
-        }
-        setTimeout(stepCode, 10);
-        return
-      }
-      iPlayer.over = true;
-      iPlayer.player.workspace.highlightBlock(null);
-      if (!nextIPlayer.over) {
-        currentPlayer = (currentPlayer + 1 ) % maxPlayers;
-        setTimeout(stepCode, 10);
-      } else {
-        validateButton.disabled = null;
-        console.log('All done');
-        codes = [];
-      }
-    } catch (error) { 
-      alert(error);
-      reset();
-    }
-  }
+  //~ function stepCode() {
+    //~ try {
+      //~ iPlayer = interpreters[currentPlayer]
+      //~ nextIPlayer  = interpreters[(currentPlayer + 1 ) % maxPlayers]
+      //~ if (iPlayer.run() && !iPlayer.over) {
+        //~ if ( ['moveForward','turnLeft','turnRight'].includes(iPlayer.value)) {
+          //~ console.log('SWITCH FROM %s TO %s', currentPlayer,(currentPlayer + 1 ) % maxPlayers);
+          //~ iPlayer.value = null;
+          //~ currentPlayer = (currentPlayer + 1 ) % maxPlayers;
+        //~ }
+        //~ setTimeout(stepCode, 10);
+        //~ return;
+      //~ }
+      //~ iPlayer.over = true;
+      //~ iPlayer.player.workspace.highlightBlock(null);
+      //~ var allFinished = true;
+      //~ interpreters.forEach( i => allFinished &= i.over );
+      //~ if (!allFinished) {
+        //~ console.log('SWITCH FROM %s TO %s', currentPlayer,(currentPlayer + 1 ) % maxPlayers);
+        //~ currentPlayer = (currentPlayer + 1 ) % maxPlayers;
+        //~ setTimeout(stepCode, 10);
+      //~ } else {
+        //~ console.log('All done');
+        //~ var result ="";
+        //~ var allGood = true;
+        //~ players.forEach(p => {
+          //~ allGood &= p.winner;
+          //~ result += p.name + (p.winner ? " a" : " n'a pas") + " trouvé la solution\n";
+          //~ if (!p.winner) {
+            //~ p.pX = p.nPosX = p.origPX;
+            //~ p.pY = p.nPosY = p.origPY;
+            //~ p.dir = p.nDir = p.origDir;
+            //~ codes[p.position] = null;
+            //~ interpreters[p.position].over = false;
+          //~ } else {
+            //~ codes[p.position] = "";
+          //~ }
+        //~ });
+        //~ setTimeout(_ => alert(result), 500);
+        //~ if (players[playerPos].winner && !allGood) {
+          //~ chatSocket.send(JSON.stringify({
+              //~ 'action': 'code',
+              //~ 'message': '',
+          //~ }));
+        //~ } else {
+          //~ validateButton.disabled = null;
+        //~ }
+        //~ codes = [];
+
+      //~ }
+    //~ } catch (error) { 
+      //~ alert(error);
+      //~ reset();
+    //~ }
+  //~ }
   
   function reset() {
-    interpreters.forEach( val => val.over = true);
+    //~ interpreters.forEach( val => val.over = true);
     setTimeout( function() {
       interpreters.forEach( val => val.player.workspace.highlightBlock(null));
     },500);
@@ -195,6 +222,7 @@
         {% if c.pixel.clockWise %}true{% else %}false{% endif %},
         {{ c.pixel.nbHPix }},
         {{ c.pixel.nbVPix }},
+        '{{MEDIA_URL}}{{ c.pixel.icon }}',
         );      
       characters.push(p);
     {% endfor %}
@@ -227,23 +255,25 @@
         var code = data['message'];
         var pPos = data['position'];
         codes[pPos] = code;
-        console.log('code received for player %s', pPos);
+        console.log('code received for player %s : \n%s', pPos, code);
         var nb_codes = codes.filter(_ => {return true} ).length;
         // On a autant de codes renseignés que de joueurs
         if (nb_codes == maxPlayers) {
           console.log('All codes received');
           codes.forEach( (c,idx) => {
               players[idx].workspace.highlightBlock(null);
+              players[idx].workspace.highlightPause = true;
               var i = new Interpreter(c, initApi);
               i.player = players[idx];
-              interpreters.push(i);
+              interpreters[idx] = i;
             });
 
-          interpreters.forEach( val => val.over = false);
+          //~ interpreters.forEach( val => val.over = false);
           
-          currentPlayer = 0;
+          //~ currentPlayer = 0;
           
-          startCode();
+          //~ startCode();
+          stepCode();
         }
         
         break;      
@@ -251,25 +281,46 @@
       case 'connection':
         console.log('Incoming connection from %s at position %s/%s', data['user'], data['position']+1, data['max_players']);
         chatLog.innerText += data['user'] + ' a rejoint la partie\n'
+        
         if (data['user'] === '{{ user.username }}') {
           playerPos = data['position']; // Auto notification de connexion -> on mémorise notre place dans le jeu
-          //~ document.getElementById('blocklyDiv'+playerPos).style.z-index = maxPlayers;
+          var waitImg = function() {
+            if (characters.length !== maxPlayers) {
+              setTimeout(waitImg, 5);
+              return;
+            } else {  
+              playerIcon.src = characters[playerPos].icon;
+            }          
+          }
+          waitImg();
+          
           document.getElementById('blocklyDiv'+playerPos).style.position = 'relative';
+          document.getElementById('blocklyDiv'+playerPos).style.display = 'inline-block';
           document.getElementById('blocklyDiv'+playerPos).style.left = '10px';
         }
         var waitSetup = function() { // On attend que les personnage P5js soient prêts
-          if (characters.length==0) {
+          if (characters.length !== maxPlayers) {
             setTimeout(waitSetup, 5);
           } else {
             if (data['players'].length === maxPlayers) {
-              data['players'].forEach( (p,idx) => {
+              data['players'].forEach( p => {
                 players[p[0]] = characters[p[0]];
                 players[p[0]].name = p[1];
-                players[p[0]].workspace = Blockly.inject('blocklyDiv'+idx, {
+                players[p[0]].position = p[0];
+                players[p[0]].workspace = Blockly.inject('blocklyDiv'+p[0], {
                   media: '{% static "third-party/blockly/media/" %}',
                       maxBlocks: {{ game.level.maxBlocks }},
                       trashcan: true,
                       toolbox: document.getElementById('toolbox')});
+                var img = document.createElement('img');
+                var txt = document.createElement('span');
+                var div = document.createElement('div');
+                img.src = characters[p[0]].icon;
+                img.style.width = "30px";
+                txt.textContent = p[1];
+                div.appendChild(img);
+                div.appendChild(txt);
+                playersList.appendChild(div);
               });              
               function onchange(event) {
                   document.getElementById('capacity').textContent =
@@ -313,6 +364,47 @@
 
       messageInputDom.value = '';
   };
+
+    function stepCode() {
+      //~ console.log('STEPPING for %s', currentPlayer);
+      var interpreter = interpreters[currentPlayer];
+      var wrkspc = interpreter.player.workspace
+      
+      wrkspc.highlightPause = false;   // HIGHLIGHT OFF
+      
+      function wt() {
+        interpreter.hasMoreCode = interpreter.step(); // STEP
+        //~ console.log('More = %s, Paused = %s', interpreter.hasMoreCode, interpreter.workspace.highlightPause);
+        if (interpreter.hasMoreCode && !wrkspc.highlightPause) {
+          setTimeout(wt, 5);
+          //~ console.log('WT');
+          return; // On consomme les instructions jusqu'à une pause ou
+                  // que plus de code
+                  
+        } else { // On a finit le code ou on est arrêté sur Highlight
+          // Si c'est le code qui est fini, on éteint les blocs
+          if (!interpreter.hasMoreCode) {wrkspc.highlightBlock(null);}
+          // Y a-t-il encore du code pour des autres interpréteurs ?
+          var stillOther = false;
+          interpreters.forEach( (i,idx) => {
+            stillOther |= i.hasMoreCode;
+            //~ console.log("I%s -> %s", idx, i.hasMoreCode)
+            });
+          //~ console.log('STILL other code : %s', stillOther)
+          if (stillOther) {
+            //~ console.log('SWITCHING from %s to %s',currentPlayer,(currentPlayer+1)%4)
+            currentPlayer = (currentPlayer+1)%4;
+            setTimeout(stepCode, 300);
+          }
+          else {
+            // On a terminé pour tous les codes
+            console.log(">> Program complete");
+          }        
+        }
+      }
+      wt(); 
+      
+    }
 
 </script>
 </body>

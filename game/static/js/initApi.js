@@ -14,8 +14,8 @@
         interpreter.createAsyncFunction(wrapper));
 
     function highlightBlock(id, callback) {
-      interpreter.player.workspace.highlightBlock(id)
-      setTimeout(callback, 500, 'highlighted block (' + id + ')');
+      interpreter.player.workspace.highlightBlock(id);
+      setTimeout(callback, 100, 'highlighted block (' + id + ')');
     }
 
     ///////////////////////////////////////////////
@@ -57,51 +57,36 @@
     ///////////////////////////////////////////////
     // Is path
     // Forward
-    var wrapper = function(blockId) {
-      return interpreter.createPrimitive(isPathForward(blockId));
+    var wrapper = function(blockId, callback) {
+      interpreter.player.isPathForward(callback);
     }
-
     interpreter.setProperty(scope, 'isPathForward',
-      interpreter.createNativeFunction(wrapper));
-
-    function isPathForward(blockId) {
-      return interpreter.player.isPathForward();
-    }
+      interpreter.createAsyncFunction(wrapper));
+    
     
     // Left
-    var wrapper = function(blockId) {
-      return interpreter.createPrimitive(isPathLeft(blockId));
+    var wrapper = function(blockId, callback) {
+      interpreter.player.isPathLeft(callback);
     }
-
     interpreter.setProperty(scope, 'isPathLeft',
-      interpreter.createNativeFunction(wrapper));
+      interpreter.createAsyncFunction(wrapper));
 
-    function isPathLeft(blockId) {
-      return interpreter.player.isPathLeft();
-    }
+    
     // Right
-     var wrapper = function(blockId) {
-      return interpreter.createPrimitive(isPathRight(blockId));
+    var wrapper = function(blockId, callback) {
+      interpreter.player.isPathRight(callback);
     }
-
     interpreter.setProperty(scope, 'isPathRight',
-      interpreter.createNativeFunction(wrapper));
-
-    function isPathRight(blockId) {
-      return interpreter.player.isPathRight();
-    }
+      interpreter.createAsyncFunction(wrapper));
     
     ///////////////////////////////////////////////
     // Is not done
-    var wrapper = function(blockId) {
-      return interpreter.createPrimitive(notDone(blockId));
+    var wrapper = function(blockId, callback) {
+      interpreter.player.notDone(callback)
     }
 
     interpreter.setProperty(scope, 'notDone',
-      interpreter.createNativeFunction(wrapper));
+      interpreter.createAsyncFunction(wrapper));
 
-    function notDone(blockId) {
-      return interpreter.player.notDone();
-    }
     /*------- End initAPI-----------*/
   }

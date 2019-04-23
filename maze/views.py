@@ -27,7 +27,7 @@ def edit_level(request, level_id=None):
             'nbVPix': HiddenInput(attrs={'size': '2'}),
             'clockWise': HiddenInput(attrs={'size': '2'}),
             },
-        extra=2, min_num=1, max_num=2,
+        extra=1, min_num=1
         )
     formset = None
     if request.method == 'POST':

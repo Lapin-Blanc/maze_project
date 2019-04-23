@@ -33,7 +33,7 @@
 </head>
 
 <body>
-   <h1>{{ pixel.name }}</h1>
+   <h1>{{ pixel.name }}&nbsp;<img src="{{MEDIA_URL}}{{ pixel.icon }}"></h1>
    <div style="width:500px; height:500px; border: solid black 1px; background-color: antiquewhite; display:inline-block" id="canvas"></div>
    <form method="POST" enctype="multipart/form-data" style="display:inline-block">
       {% csrf_token %}

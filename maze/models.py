@@ -16,6 +16,7 @@ class Pixel(models.Model):
     clockWise = models.BooleanField('rotation horaire', default = True)
     nbHPix = models.IntegerField('sprites horizontaux', default = 16)
     nbVPix = models.IntegerField('sprites verticaux', default = 1)
+    icon = models.ImageField('icône', null=True)
     
     def __str__(self):
         return self.name

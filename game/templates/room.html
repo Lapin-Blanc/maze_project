@@ -264,15 +264,11 @@
               players[idx].workspace.highlightBlock(null);
               players[idx].workspace.highlightPause = true;
               var i = new Interpreter(c, initApi);
+              i.hasMoreCode = true;
               i.player = players[idx];
               interpreters[idx] = i;
             });
 
-          //~ interpreters.forEach( val => val.over = false);
-          
-          //~ currentPlayer = 0;
-          
-          //~ startCode();
           stepCode();
         }
         
@@ -367,15 +363,15 @@
 
     function stepCode() {
       //~ console.log('STEPPING for %s', currentPlayer);
-      var interpreter = interpreters[currentPlayer];
-      var wrkspc = interpreter.player.workspace
+      var intrprtr = interpreters[currentPlayer];
+      var wrkspc = intrprtr.player.workspace
       
       wrkspc.highlightPause = false;   // HIGHLIGHT OFF
       
       function wt() {
-        interpreter.hasMoreCode = interpreter.step(); // STEP
-        //~ console.log('More = %s, Paused = %s', interpreter.hasMoreCode, interpreter.workspace.highlightPause);
-        if (interpreter.hasMoreCode && !wrkspc.highlightPause) {
+        intrprtr.hasMoreCode = intrprtr.step(); // STEP
+        //~ console.log('More = %s, Paused = %s', intrprtr.hasMoreCode, wrkspc.highlightPause);
+        if (intrprtr.hasMoreCode && !wrkspc.highlightPause) {
           setTimeout(wt, 5);
           //~ console.log('WT');
           return; // On consomme les instructions jusqu'à une pause ou
@@ -383,7 +379,7 @@
                   
         } else { // On a finit le code ou on est arrêté sur Highlight
           // Si c'est le code qui est fini, on éteint les blocs
-          if (!interpreter.hasMoreCode) {wrkspc.highlightBlock(null);}
+          if (!intrprtr.hasMoreCode) {wrkspc.highlightBlock(null);}
           // Y a-t-il encore du code pour des autres interpréteurs ?
           var stillOther = false;
           interpreters.forEach( (i,idx) => {
@@ -392,13 +388,40 @@
             });
           //~ console.log('STILL other code : %s', stillOther)
           if (stillOther) {
-            //~ console.log('SWITCHING from %s to %s',currentPlayer,(currentPlayer+1)%4)
-            currentPlayer = (currentPlayer+1)%4;
-            setTimeout(stepCode, 300);
+            //~ console.log('SWITCHING from %s to %s',currentPlayer,(currentPlayer+1) % maxPlayers);
+            currentPlayer = (currentPlayer+1) % maxPlayers;
+            setTimeout(stepCode, 500);
           }
           else {
             // On a terminé pour tous les codes
             console.log(">> Program complete");
+
+
+            var result ="";
+            var allGood = true;
+            players.forEach(p => {
+              allGood &= p.winner;
+              result += p.name + (p.winner ? " a" : " n'a pas") + " trouvé la solution\n";
+              if (!p.winner) {
+                p.pX = p.nPosX = p.origPX;
+                p.pY = p.nPosY = p.origPY;
+                p.dir = p.nDir = p.origDir;
+                delete codes[p.position];
+                //~ interpreters[p.position].over = false;
+              } else {
+                codes[p.position] = "";                
+              }
+            });
+            setTimeout(_ => alert(result), 500);
+            //~ if (players[playerPos].winner && !allGood) {
+            if (players[playerPos].winner ) {
+              //~ chatSocket.send(JSON.stringify({
+                  //~ 'action': 'code',
+                  //~ 'message': '',
+              //~ }));
+            } else {
+              validateButton.disabled = null;
+            }
           }        
         }
       }

@@ -18,6 +18,9 @@ class Pixel(models.Model):
     nbVPix = models.IntegerField('sprites verticaux', default = 1)
     icon = models.ImageField('icône', null=True)
     
+    class Meta:
+      ordering = ['name']
+
     def __str__(self):
         return self.name
 
@@ -34,6 +37,9 @@ class Character(models.Model):
     
     def get_absolute_url(self):
         return reverse('maze:char_preview', kwargs={'char_id': self.id})
+
+    class Meta:
+      ordering = ['name']
     
     def __str__(self):
         return self.name
@@ -59,6 +65,7 @@ class Level(models.Model):
     
     class Meta:
         verbose_name_plural = 'niveaux'
+        ordering = ['name']
     
     def get_absolute_url(self):
         return reverse('maze:edit', kwargs={'level_id': self.id})

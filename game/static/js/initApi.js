@@ -15,6 +15,7 @@
 
     function highlightBlock(id, callback) {
       interpreter.player.workspace.highlightBlock(id);
+      interpreter.player.workspace.highlightPause = true;
       setTimeout(callback, 100, 'highlighted block (' + id + ')');
     }
 

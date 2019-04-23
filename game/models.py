@@ -14,6 +14,9 @@ class Game(models.Model):
     def is_open(self):
         return self.players.count() < self.level.character_set.count()
     
+    class Meta:
+      ordering = ['name']
+    
     def __str__(self):
         return self.name
 

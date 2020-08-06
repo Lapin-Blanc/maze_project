@@ -69,12 +69,14 @@
   <!-- Seconde ligne -->
   <div style="width: 50%; margin:10px;display:inline-block; ">
     <!-- Chat -->
-    <div id="chat-log" style="overflow-y: scroll;width:100%;height:220px;border:solid lightgrey 1px;"></div>
+    <div id="chat-log" style="overflow-y: scroll;width:100%;height:200px;border:solid lightgrey 1px;"></div>
     <input id="chat-message-input" type="text" style="width:85%; %">
     <input id="chat-message-submit" type="button" style="width:13%;float:right" value="Envoyer">
   </div>
-  <div id="playersList" style="height:265px;width:10%;display:inline-block;background-color:white"></div>
-  <div id="statusDiv" style="overflow-y: scroll;display:inline-block; width:30%; height: 223px; border:solid lightgrey 1px;"></div>
+  <div id="playersList" style="height:200px;width:10%;display:inline-block;background-color:white"></div>
+  <div id="statusDiv" style="overflow-y: scroll;display:inline-block; width:30%; height: 200px; border:solid white 1px;">
+  {{ game.level.description|safe }}
+  </div>
   <!-- Toolbox pour blockly -->
   <xml id="toolbox" style="display: none">
       {% for tool in game.level.blocks.all %}

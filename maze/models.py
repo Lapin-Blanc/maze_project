@@ -62,6 +62,7 @@ class Level(models.Model):
         )
     maxBlocks = models.IntegerField('nombre max de blocs', default=0)
     blocks = models.ManyToManyField(Block, verbose_name='blocs disponibles')
+    description = models.TextField('Description', default='')
     
     class Meta:
         verbose_name_plural = 'niveaux'

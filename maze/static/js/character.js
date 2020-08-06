@@ -90,7 +90,7 @@ function Character(posX, posY, direction, spriteImgUrl, downIndex, clockWise, nb
     }
     // Draw image
     if (pixWidth && pixHeight) {
-      image(this.sprite, this.pX, this.pY, pixWidth, pixHeight, (this.dir%nbHPix)*pixWidth, ~~(this.dir/nbHPix)*pixHeight, pixWidth, pixHeight);
+      image(this.sprite, this.pX-(pixWidth-50), this.pY-(pixHeight-50), pixWidth, pixHeight, (this.dir%nbHPix)*pixWidth, ~~(this.dir/nbHPix)*pixHeight, pixWidth, pixHeight);
     }
   }
   

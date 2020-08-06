@@ -1,5 +1,5 @@
 <ul>
 {% for game in games %}
-    <li><a href="{% url 'game:room' game_id=game.id %}">{{ game }}</a></li>
+    <li><a href="{% url 'game:room' game_id=game.id %}">{{ game }} - {{ game.level }}</a></li>
 {% endfor %}
 </ul>

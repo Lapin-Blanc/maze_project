@@ -129,6 +129,7 @@ LOGOUT_REDIRECT_URL = 'accounts:home'
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # pour servir les fichiers utilisateurs
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -140,3 +141,5 @@ CHANNEL_LAYERS={
         "BACKEND": "channels.layers.InMemoryChannelLayer"
      }
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

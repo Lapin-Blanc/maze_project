@@ -9,7 +9,7 @@ local_settings.py
 !static/readme
 !static/favicon.ico
 /static/
-/media/
+#/media/
 
 # C extensions
 *.so

@@ -1,5 +1,6 @@
 # maze.urls
 from django.urls import path
+
 from .views import index, edit_level, pixel_preview, pixel_index
 
 app_name = 'maze'
